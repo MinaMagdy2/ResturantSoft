@@ -1,0 +1,35 @@
+﻿@using System.Text
+
+@if (Error is not null)
+{
+    <div class="alert alert-danger mt-3" style="white-space: pre-line;">
+        @((MarkupString)BuildMessage())
+    </div>
+}
+
+@code {
+    [Parameter] public ApiError? Error { get; set; }
+
+    private string BuildMessage()
+    {
+        if (Error == null)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+
+        sb.AppendLine($"<strong>{Error.Message ?? "Validation Error"}</strong><br>");
+
+        if (Error.Errors != null && Error.Errors.Any())
+        {
+            foreach (var kvp in Error.Errors)
+            {
+                foreach (var msg in kvp.Value)
+                {
+                    sb.AppendLine($"{kvp.Key}: {msg}<br>");
+                }
+            }
+        }
+
+        return sb.ToString();
+    }
+}

@@ -1,0 +1,102 @@
+﻿@page "/edit/{id:int}"
+@using Refit
+@inject IOrderApi orderApi
+@inject ApiService apiService
+@inject NavigationManager navManager
+@using Resturant.Shared
+
+<PageTitle>Edit Restaurant</PageTitle>
+
+<h3>Edit Restaurant</h3>
+
+@if (isLoading)
+{
+    <p><em>Loading restaurant...</em></p>
+}
+else if (model == null)
+{
+    <p class="text-danger">❌ Restaurant not found.</p>
+}
+else
+{
+    <EditForm Model="@model" OnValidSubmit="@UpdateRes">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Name:</label>
+            <InputText @bind-Value="model.Name" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Price:</label>
+            <InputNumber @bind-Value="model.Price" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Category:</label>
+            <InputText @bind-Value="model.Category" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Image Path:</label>
+            <InputText @bind-Value="model.ImagePath" class="form-control" />
+        </div>
+
+        <button class="btn btn-success mt-3" type="submit">💾 Save</button>
+        <button class="btn btn-secondary mt-3 ms-2" @onclick="GoBack">⬅️ Back</button>
+    </EditForm>
+
+    <ApiErrorAlert Error="responseError" />
+
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success mt-3">@successMessage</div>
+    }
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private ResWithOrderItemsDto? model;
+    private ApiError? responseError;
+    private string? successMessage;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            model = await orderApi.GetOrder(id);
+        }
+        catch
+        {
+            model = null;
+        }
+        isLoading = false;
+    }
+
+    private async Task UpdateRes()
+    {
+        responseError = null;
+        successMessage = null;
+
+        var response = await apiService.SafeCall(() => orderApi.UpdateOrder(id, model!));
+
+        if (response.HasError)
+        {
+            responseError = response.Error;
+            return;
+        }
+
+        successMessage = "✅ Restaurant updated successfully!";
+        // ممكن ترجع تلقائي بعد شوية
+        // await Task.Delay(1500);
+        // navManager.NavigateTo("/");
+    }
+
+    private void GoBack()
+    {
+        navManager.NavigateTo("/");
+    }
+}
