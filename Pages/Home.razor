@@ -1,0 +1,115 @@
+﻿@page "/"
+@using Refit
+@inject IOrderApi orderApi
+@inject ApiService apiService
+@using Resturant.Shared
+@inject NavigationManager navManager
+
+<PageTitle>Home</PageTitle>
+
+<h3>Orders</h3>
+
+@if (orders is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Category</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>
+                        <img src="@order.ImagePath" alt="QR Code" width="50" height="50" />
+                    </td>
+                    <td>@order.Category</td>
+                    <td>@order.Name</td>
+                    <td>@order.Price.ToString("C")</td>
+                    <td>
+						<button class="btn btn-secondary" @onclick="() => EditRes(order.Id)">Edit</button>
+					</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<h4>Create New Restaurant</h4>
+
+<div class="form-group">
+    <label>Name:</label>
+    <input @bind="model.Name" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Price:</label>
+    <input type="number" @bind="model.Price" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Category:</label>
+    <input @bind="model.Category" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Image Path:</label>
+    <input @bind="model.ImagePath" class="form-control" />
+</div>
+
+<button class="btn btn-primary mt-2" @onclick="CreateRes">Create</button>
+
+<ApiErrorAlert Error="responseError" />
+
+
+@if (createdRes != null)
+{
+    <p class="text-success mt-2">✅ Created: @createdRes.Name</p>
+}
+
+
+
+
+@code {
+    private ResWithOrderItemsDto model = new();
+    private List<ResWithOrderItemsDto> orders = new();
+    private ResWithOrderItemsDto? createdRes;
+    private ApiError? responseError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await orderApi.GetAllOrders();
+    }
+
+    private async Task CreateRes()
+    {
+        var response = await apiService.SafeCall(() => orderApi.CreateOrder(model));
+
+        if (response.HasError)
+        {
+            responseError = response.Error;
+            return;
+        }
+
+        createdRes = response.Data;
+        responseError = null;
+    }
+
+    private void EditRes(int id)
+    {
+        navManager.NavigateTo($"/edit/{id}");
+    }
+
+
+}
